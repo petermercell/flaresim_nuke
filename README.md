@@ -5,6 +5,8 @@ FlareSim traces rays through a real lens prescription to produce ghost
 reflections that respond correctly to source position, wavelength, and aperture
 shape — without look-up textures or artist-painted elements.
 
+Tutorial: [https://youtu.be/yEsBOQNG16Y](https://youtu.be/yEsBOQNG16Y)
+
 ---
 
 ## Credits
