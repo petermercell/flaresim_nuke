@@ -36,7 +36,7 @@ Same lens (Angenieux 180mm, 15 surfaces, 66 active pairs), same frame, same mach
 
 ## Linux — Pre-built Binaries
 
-Pre-built binaries are available in the [Releases](https://github.com/petermercell/flaresim_nuke/releases) section. If a binary does not load or crashes, **double-check your CUDA version** — the plugin must match the CUDA runtime on your system.
+Pre-built binaries are available. If a binary does not load or crashes, **double-check your CUDA version** — the plugin must match the CUDA runtime on your system.
 
 The binaries were compiled and tested with **CUDA 12.1** and confirmed working on **CUDA 12.8** as well.
 
