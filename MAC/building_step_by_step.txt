@@ -1,0 +1,90 @@
+# FlareSim Metal — Build Instructions
+# ====================================
+#
+# macOS / Apple Silicon Metal port of FlareSim.
+#
+# Requires:
+#   • macOS 13+ (Ventura or later)
+#   • Apple Silicon (M1/M2/M3/M4 or later)
+#   • Xcode Command Line Tools (provides xcrun, metal compiler, metallib)
+#   • CMake 3.18+
+#   • Nuke NDK headers (any Nuke 14.1+)
+#
+# The plugin embeds the compiled Metal shader library (.metallib) into the
+# binary — no external shader files needed at runtime.
+#
+# No CUDA, no NVIDIA driver required — Metal.framework ships with macOS.
+
+
+# ---------------------------------------------------------------------------
+# macOS — Apple Silicon (M1/M2/M3/M4)
+# ---------------------------------------------------------------------------
+
+cd /Users/g/Downloads/FLARE_SIM_MAC
+
+
+# Nuke 17
+rm -rf build && mkdir build && cd build
+cmake .. -DNUKE_VERSION=17.0v1 \
+         -DNUKE_ROOT="/Applications/Nuke17.0v1/Nuke17.0v1.app/Contents/MacOS"
+make -j$(sysctl -n hw.ncpu)
+
+# Verify — should link only Metal.framework and DDImage, no CUDA
+otool -L ./FlareSim.dylib | grep -E 'Metal|DDImage|cuda'
+# Expected:
+#   /System/Library/Frameworks/Metal.framework/Versions/A/Metal
+#   @rpath/libDDImage.dylib
+# No CUDA references.
+
+
+# Nuke 15
+rm -rf build && mkdir build && cd build
+cmake .. -DNUKE_VERSION=15.1v10 \
+         -DNUKE_ROOT="/Applications/Nuke15.1v10/Nuke15.1v10.app/Contents/MacOS"
+make -j$(sysctl -n hw.ncpu)
+
+
+# ---------------------------------------------------------------------------
+# Install into Nuke plugin path
+# ---------------------------------------------------------------------------
+
+# Option A: via cmake install
+cmake .. -DNUKE_VERSION=17.0v1 \
+         -DNUKE_ROOT="/Applications/Nuke17.0v1/Nuke17.0v1.app/Contents/MacOS" \
+         -DNUKE_PLUGIN_DIR="$HOME/.nuke/plugins"
+make -j$(sysctl -n hw.ncpu) install
+
+# Option B: manual copy
+cp FlareSim.dylib ~/.nuke/plugins/
+
+
+# ---------------------------------------------------------------------------
+# Notes
+# ---------------------------------------------------------------------------
+#
+# • Metal 3.0 (macOS 13+) is required for atomic_float operations in the
+#   ghost scatter kernel.  The CMakeLists.txt sets -std=metal3.0 and
+#   deployment target 13.0 automatically.
+#
+# • Apple Silicon's unified memory eliminates all H2D/D2H copies.
+#   The GPU writes directly to CPU-accessible buffers.  This typically
+#   makes the Metal version faster than the CUDA version for readback-
+#   heavy workloads (blur + alpha + FP16 conversion + readback).
+#
+# • The Metal shader library (.metallib) is compiled at build time and
+#   embedded in the plugin binary via .incbin (same technique used by
+#   CML_DepthAnything3).  No external files needed at runtime.
+#
+# • Thread dispatch is slightly different from CUDA:
+#     CUDA:  <<<grid, block>>>
+#     Metal: dispatchThreadgroups:threadsPerThreadgroup:
+#   The ghost kernel uses the same logical layout: one threadgroup per
+#   (pair, source) combination × grid blocks.
+#
+# • SIMD-group width on Apple Silicon is 32 threads (same as a CUDA warp).
+#   The warp-cooperative splat uses direct atomics instead of
+#   __match_any_sync — Apple's L2 atomic latency is low enough that the
+#   performance difference is minimal.
+#
+# • The plugin registers as "FlareSim" (same as the CUDA version) so
+#   .nk scripts are compatible between platforms.
