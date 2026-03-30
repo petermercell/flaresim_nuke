@@ -1,9 +1,0 @@
-export PATH=/usr/local/cuda-12.1/bin:$PATH
-export LD_LIBRARY_PATH=/usr/local/cuda-12.1/lib64:$LD_LIBRARY_PATH
-
-rm -rf build && mkdir build && cd build
-cmake .. -DNUKE_VERSION=17.0v1 \
-         -DNDK_ROOT=/opt/Nuke17.0v1/include \
-         -DNUKE_LIB_DIR=/opt/Nuke17.0v1 \
-         -DCMAKE_CUDA_ARCHITECTURES="86;89;90"
-make -j$(nproc)
