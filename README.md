@@ -10,7 +10,7 @@ The original FlareSim is a Windows/Nuke 16 plugin built on CUDA 13. This fork ad
 
 ---
 
-## What's New in v2.0
+## What's New
 
 ### FlareSim3D — Camera + Axis driven flares
 
