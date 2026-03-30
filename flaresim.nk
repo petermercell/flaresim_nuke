@@ -1,0 +1,126 @@
+#! /opt/Nuke15.1v10/libnuke-15.1.10.so -nx
+version 15.1 v10
+define_window_layout_xml {<?xml version="1.0" encoding="UTF-8"?>
+<layout version="1.0">
+    <window x="0" y="32" w="2560" h="1387" maximized="1" screen="0">
+        <splitter orientation="1">
+            <split size="40"/>
+            <dock id="" hideTitles="1" activePageId="Toolbar.1">
+                <page id="Toolbar.1"/>
+            </dock>
+            <split size="1897" stretch="1"/>
+            <splitter orientation="2">
+                <split size="789"/>
+                <dock id="" activePageId="Viewer.1">
+                    <page id="Viewer.1"/>
+                </dock>
+                <split size="555"/>
+                <dock id="" activePageId="DAG.1" focus="true">
+                    <page id="DAG.1"/>
+                    <page id="Curve Editor.1"/>
+                    <page id="DopeSheet.1"/>
+                </dock>
+            </splitter>
+            <split size="615"/>
+            <dock id="" activePageId="Properties.1">
+                <page id="Properties.1"/>
+                <page id="uk.co.thefoundry.backgroundrenderview.1"/>
+                <page id="Scenegraph.1"/>
+            </dock>
+        </splitter>
+    </window>
+</layout>
+}
+Root {
+ inputs 0
+ name /home/pm/Documents/FlareSim004/flaresim.nk
+ frame 72
+ format "2048 1556 0 0 2048 1556 1 2K_Super_35(full-ap)"
+ proxy_type scale
+ proxy_format "1024 778 0 0 1024 778 1 1K_Super_35(full-ap)"
+ colorManagement OCIO
+ OCIO_config fn-nuke_studio-config-v3.0.0_aces-v2.0_ocio-v2.4
+ customOCIOConfigPath /Users/g/.nuke/color/OCIOConfigs/configs/aces_1.2/config.ocio
+ defaultViewerLUT "OCIO LUTs"
+ workingSpaceLUT scene_linear
+ monitorLut "ACES 2.0 - SDR 100 nits (Rec.709) (sRGB - Display)"
+ monitorOutLUT "ACES 2.0 - SDR 100 nits (Rec.709) (sRGB - Display)"
+ int8Lut matte_paint
+ int16Lut texture_paint
+ logLut compositing_log
+ floatLut scene_linear
+}
+Axis3 {
+ inputs 0
+ translate {{curve x1 3 x100 0.4} {curve x1 5.2 x100 2.2} {curve x1 -2 x100 -12}}
+ name Axis1
+ xpos 133
+ ypos -181
+}
+Camera3 {
+ inputs 0
+ translate {0 0 -0.1}
+ focal {{curve x30 10 x100 40}}
+ shutteroffset centred
+ name Camera1
+ xpos -36
+ ypos -193
+}
+CheckerBoard2 {
+ inputs 0
+ format "2048 1556 0 0 2048 1556 1 2K_Super_35(full-ap)"
+ name CheckerBoard1
+ xpos -226
+ ypos -145
+}
+set N1396a1a0 [stack 0]
+FlareSim3D {
+ inputs 3
+ lens_file /home/pm/Documents/FlareSim/lenses/lens_files/Angenieux_28mm_F3.5_(Angenieux_28mm_f3.5_R11).lens
+ ray_grid 2048
+ flare_gain 200
+ sample_radius 40
+ source_intensity 0.4
+ intensity_falloff true
+ reference_distance 10
+ outside_source_intensity 10
+ outside_source_falloff 144
+ spectral_samples 31
+ highlight_compress true
+ highlight_clip 0.4
+ highlight_knee 0.2
+ name FlareSim3D1
+ xpos -46
+ ypos -6
+}
+push $N1396a1a0
+FlareSim {
+ lens_file /home/pm/Documents/FlareSim/lenses/lens_files/Angenieux_28mm_F3.5_(Angenieux_28mm_f3.5_R11).lens
+ ray_grid 2048
+ flare_gain 100
+ manual_xy {{curve x1 94 x40 1890 x52 2976 x71 1890 x100 134} {curve x1 1430 x40 106 x52 1210 x71 1422 x100 106}}
+ source_intensity 9
+ outside_source_color {1.5 1 0.5}
+ outside_source_intensity 20
+ outside_source_falloff 80
+ spectral_samples 31
+ spectral_jitter_seed 50
+ highlight_compress true
+ highlight_clip 0.5
+ highlight_knee 0.2
+ surf_scale_2 1.5
+ surf_color_4 {{curve x1 1 x32 1.5 x70 0.1666666716 x100 1.833333254} {curve x1 1 x32 1 x70 1.666666627 x100 0.3333333433} {curve x1 1 x32 0.5 x70 1.166666627 x100 0.3333333433}}
+ surf_scale_4 0.4
+ name FlareSim1
+ xpos -226
+ ypos -17
+}
+Viewer {
+ frame 72
+ frame_range 1-100
+ colour_sample_bbox {0.720703125 0.37109375 0.7353515625 0.384765625}
+ monitorOutNDISenderName "Nuke - flaresim - Viewer1"
+ name Viewer1
+ xpos -308
+ ypos 66
+}
