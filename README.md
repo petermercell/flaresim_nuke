@@ -84,21 +84,17 @@ Same lens (Angenieux 180mm, 15 surfaces, 66 active pairs), same frame, same mach
 
 ## Platforms
 
-| Platform | Status |
-|----------|--------|
-| **Linux** | Fully supported — pre-built binaries and build-from-source |
-| **macOS** | Supported (Metal GPU, Apple Silicon) |
-| **Windows** | Supported |
+| Platform | GPU Backend | Status |
+|---|---|---|
+| **Linux** | CUDA | Fully supported — pre-built binaries and build-from-source |
+| **macOS** | Metal | Supported — build-from-source |
+| **Windows** | CUDA | Supported — build-from-source (Ninja + MSVC 2022) |
 
 ---
 
-## Linux — Pre-built Binaries
+## Building from Source
 
-Pre-built binaries are available. If a binary does not load or crashes, **double-check your CUDA version** — the plugin must match the CUDA runtime on your system.
-
-The binaries were compiled and tested with **CUDA 12.1** and confirmed working on **CUDA 12.8** as well.
-
-### Building from Source (Linux)
+### Linux
 
 ```bash
 export PATH=/usr/local/cuda-12.1/bin:$PATH
@@ -106,32 +102,58 @@ export LD_LIBRARY_PATH=/usr/local/cuda-12.1/lib64:$LD_LIBRARY_PATH
 
 rm -rf build && mkdir build && cd build
 
-cmake .. -DNUKE_VERSION=17.0v1 \
-         -DNDK_ROOT=/opt/Nuke17.0v1/include \
-         -DNUKE_LIB_DIR=/opt/Nuke17.0v1 \
+cmake .. -DNUKE_VERSION=14.1v8 \
          -DCMAKE_CUDA_ARCHITECTURES="86;89;90"
 
 make -j$(nproc)
 ```
 
-Adjust `NUKE_VERSION`, `NDK_ROOT`, `NUKE_LIB_DIR`, and `CMAKE_CUDA_ARCHITECTURES` to match your environment. The build system supports Nuke 14–17, with automatic `-D_GLIBCXX_USE_CXX11_ABI=0` for Nuke 14.x.
-
 Output: `build/FlareSim.so` + `build/FlareSim3D.so`
 
-### Building from Source (macOS — Apple Silicon)
+Adjust `NUKE_VERSION` and `CMAKE_CUDA_ARCHITECTURES` to match your environment. `NDK_ROOT` and `NUKE_LIB_DIR` default to `/usr/local/Nuke<VERSION>`. CUDA runtime is linked statically — no runtime dependency.
+
+### macOS (Metal)
 
 ```bash
 rm -rf build && mkdir build && cd build
 
-cmake .. -DNUKE_VERSION=17.0v1 \
-         -DNUKE_ROOT="/Applications/Nuke17.0v1/Nuke17.0v1.app/Contents/MacOS"
+cmake .. -DNUKE_VERSION=14.1v8
 
 make -j$(sysctl -n hw.ncpu)
 ```
 
 Output: `build/FlareSim.dylib` + `build/FlareSim3D.dylib`
 
-The Metal backend uses `MTLResourceStorageModeShared` (unified memory) and an embedded `.metallib` compiled at build time. Same knob names and defaults as the CUDA version — `.nk` scripts are portable between platforms.
+Metal shaders are compiled at plugin load time. No CUDA required.
+
+### Windows
+
+Requires Visual Studio 2022 Developer Command Prompt and CUDA 12.4 (or any 12.x). Uses Ninja generator — the VS generator ignores `CMAKE_CUDA_COMPILER`.
+
+```cmd
+set PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.4\bin;%PATH%
+
+cd C:\path\to\flaresim_nuke
+
+rmdir /s /q build 2>nul & mkdir build && cd build && cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=cl -DCMAKE_CUDA_COMPILER="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.4/bin/nvcc.exe" -DNUKE_VERSION=14.1v8 -DCMAKE_CUDA_ARCHITECTURES="86;89;90" && cmake --build .
+```
+
+Output: `build\FlareSim.dll` + `build\FlareSim3D.dll`
+
+CUDA runtime is linked statically — no `cudart64_*.dll` needed at runtime. The plugin only requires an NVIDIA driver ≥ 525 (CUDA 12.4 minimum). Any newer driver (12.8, 12.9, 13.x) works — drivers are forward-compatible.
+
+### CUDA Architecture Reference
+
+| Architecture | GPUs | Min CUDA |
+|---|---|---|
+| sm_70 | V100, Titan V | 9.0 |
+| sm_75 | RTX 2000, T4 | 10.0 |
+| sm_86 | RTX 3000, A5000/A6000 | 11.1 |
+| sm_89 | RTX 4000 | 11.8 |
+| sm_90 | H100 | 12.0 |
+| sm_100 | RTX 5000, B200 | 12.8 |
+
+Default: `86;89;90` (covers Ampere through Hopper). Add `100` for Blackwell if your CUDA toolkit supports it.
 
 ---
 
