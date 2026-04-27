@@ -188,10 +188,130 @@ Default: `86;89;90` (covers Ampere through Hopper). Add `100` for Blackwell if y
 
 ---
 
+---
+
+## Anamorphic Support
+
+Anamorphic lenses produce ghosts and flares with a different shape than spherical lenses — horizontal streaks, oval bokeh, asymmetric, rainbow chromatic aberrations. These signatures arise from cylindrical and toric refractive surfaces inside the actual lens, not from a post-render warp. FlareSim now traces rays through real anamorphic geometry on both CPU and GPU.
+
+### What's supported
+
+- **Cylindrical surfaces** — `cyl_x` (axis along X) and `cyl_y` (axis along Y). Used by every common anamorphic afocal attachment design (CinemaScope, Panavision C-series, Cooke Anamorphic/i, Hawk, Iscorama-style adapters)
+- **Toric surfaces** — two-radii curvature in orthogonal axes. Solved on GPU via Newton-Raphson on the implicit quartic. Used by some modern anamorphic designs that prefer single-element correctors over Galilean afocal blocks
+- **Mixed geometry** — a single `.lens` file can freely combine spherical, cylindrical, and toric surfaces in any order
+- **All ghost reflections respect surface curvature type** — a `cyl_y` reflection produces a horizontal streak; a toric reflection produces an asymmetric defocus pattern; both happen automatically based on what the `.lens` file declares
+- **FlareSim and FlareSim3D both anamorphic-ready** — they share the same lens / trace / ghost code paths, no per-node anamorphic plumbing
+
+### What you'll see in render
+
+- Horizontal anamorphic streak from `cyl_y` reflections — the iconic streak
+- Oval bokeh that comes naturally from a squeezed entrance pupil
+- Rainbow color separation when you combine low-Abbe-number glass with uncoated surfaces (the Cooke SF look)
+- Different ghost geometry vs the same lens with all spherical surfaces — visibly different on side-by-side renders
+
+### Test lenses included
+
+| File | Purpose |
+| --- | --- |
+| `lenses/Anamorphic_Test_50mm_2x.lens` | 2× squeeze, all-`cyl_y` afocal block — exercises the cylinder path |
+| `lenses/Anamorphic_Test_50mm_2x_toric.lens` | Same lens with one cyl_y promoted to `toric` — exercises the toric Newton solver |
+
+---
+
+## Authoring Anamorphic .lens Files
+
+If you want to build your own anamorphic prescription, here's everything you need to know.
+
+### File format
+
+A line in the `surfaces:` section now accepts up to 8 tokens. Tokens 1–6 are unchanged from the original FlareSim, so every existing `.lens` file still loads bit-identically:
+
+```
+radius   thickness   ior    abbe   semi_ap   coating   [type]   [radius_y]
+```
+
+Tokens 7 and 8 are optional. Missing → spherical (the legacy default).
+
+| Type token | Meaning | What `radius` means | Needs `radius_y`? |
+| --- | --- | --- | --- |
+| `sph` (or omitted) | Spherical | R | no |
+| `cyl_x` | Cylinder, axis along X — curves in YZ | Ry (vertical-axis curvature) | no |
+| `cyl_y` | Cylinder, axis along Y — curves in XZ | Rx (horizontal-axis curvature) | no |
+| `toric` | Two orthogonal radii | Rx | yes — supply Ry as the 8th token |
+
+For a horizontal anamorphic squeeze (the standard cinematic look), you almost always want `cyl_y` — the cylinder axis is vertical, so the surface refracts only in the horizontal axis. Vertical rays pass straight through, horizontal rays get squeezed.
+
+### Example — minimal cyl_y front element
+
+```
+# Anamorphic 50mm 2x test
+name: Test 50mm 2x
+focal_length: 50.0
+
+surfaces:
+# radius   thickness   ior      abbe   semi_ap   coating   type
+  -50.0    8.00        1.5168   64.2   45.0      1         cyl_y    # plano-concave neg cyl
+  0        92.00       1.0      0.0    45.0      0                  # flat back, 92 mm air gap
+  0        10.00       1.5168   64.2   40.0      1                  # flat front of pos cyl
+  -100.0   15.00       1.0      0.0    40.0      0         cyl_y    # plano-convex pos cyl
+  ... rest of taking lens (spherical) ...
+```
+
+That's a Galilean afocal cylindrical attachment with a 2× horizontal squeeze: |F2|/|F1| = 194/97 = 2.0.
+
+### Designing a squeeze ratio
+
+For an afocal attachment with squeeze ratio S, you need a negative-then-positive cylindrical pair:
+
+- Pick F1 (negative cyl, plano-concave) and F2 (positive cyl, plano-convex) such that |F2|/|F1| = S
+- Air gap between them = F1 + F2 (F1 is negative, so gap = F2 − |F1|)
+- For a thin plano-cylindrical with refractive index n: F = (n − 1)·R for plano-concave with R<0, or F = −(n − 1)·R for plano-convex with back R<0
+
+Common ratios in the wild:
+
+| Squeeze | Examples |
+| --- | --- |
+| 1.33× | Iscorama-style adapters, Atlas Mercury, vintage scope add-ons |
+| 1.8× | Cooke Anamorphic/i FF, Vantage Hawk Class-X — full-frame friendly |
+| 2× | Cooke S35, Panavision, traditional CinemaScope/Hollywood scope |
+
+### Geometric validity gotcha
+
+**The semi-aperture must be smaller than `|R|`** for any spherical or cylindrical curved surface. A surface with R = −30 cannot have semi_aperture = 40 — the sphere physically doesn't extend that far in the radial direction. The trace will silently miss those rays and you'll see almost no ghosts.
+
+Rule of thumb: keep `semi_aperture < |R|` for curved surfaces. Use `semi_aperture < 0.7·|R|` if you want margin for off-axis behavior. (This applies to all curved types — spherical, cylindrical, and toric. Toric must satisfy this for both Rx and Ry.)
+
+### Coating and Abbe number choices for the look you want
+
+Coating layer count maps to ghost brightness via Fresnel reflectance:
+
+| Goal | Coating value | Per-surface reflectance (approx) |
+| --- | --- | --- |
+| Modern multi-coated lens (clean, dim ghosts) | `2` or higher | <0.5% |
+| Vintage single-coated lens (visible flares) | `1` (MgF2 quarter-wave) | ~1% |
+| Cooke "Special Flair" / heavy flare style | `0` (uncoated) | ~4% |
+
+Abbe number controls dispersion (rainbow color spread). Lower Abbe → more spectral separation in ghosts:
+
+- Crown glass: `n=1.5168, abbe=64.2` (BK7) — minimal chromatic aberration in ghosts
+- Heavy flint: `n=1.6068, abbe=37.0` (SF6) — strong color spread, the basis of the "rainbow flare" look
+
+---
+
+## What Changed
+
+### Anamorphic support (new since the previous version of this fork)
+
+* **Cylindrical surfaces** — CPU intersection in `trace.cpp::intersect_cylinder_x/y`, GPU mirror in `ghost_cuda.cu::d_intersect_cylinder_x/y`
+* **Toric surfaces** — Newton-Raphson on the implicit quartic, CPU + GPU. `MAX_ITER` tuned to 16 (down from a conservative 30) based on instrumented convergence data on adversarial test sets
+* **Lens parser extensions** — optional 7th and 8th tokens for surface type and Ry. Legacy spherical files load byte-identically
+
+---
+
+
 ## Future Ideas
 
-1. **Source reflection in the lens** — feed the detected source back into the lens system as a secondary light source, producing the bright reflection spot visible on real lens elements when shooting toward a light. This would close the loop between the ghost renderer and the physical lens geometry.
-2. **Starburst as a separate node** — a standalone diffraction spike generator with more controls, decoupled from the ghost renderer.
+1. **Starburst as a separate node** — a standalone diffraction spike generator with more controls, decoupled from the ghost renderer.
 
 ---
 
