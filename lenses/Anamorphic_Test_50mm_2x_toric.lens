@@ -1,0 +1,56 @@
+# Anamorphic Test 50mm 2x — TORIC variant (M4 / M5 trace exerciser)
+#
+# Same prescription as Anamorphic_Test_50mm_2x.lens except surface 3 has
+# been promoted from cyl_y (Rx only) to toric (Rx and Ry).  The optical
+# behaviour is intentionally close to the cyl_y baseline so the two files
+# can be A/B'd in render — the ONLY change is that ghost rays touching
+# surface 3 now go through the Newton-Raphson toric solver added in M4
+# (CPU) and M5 (GPU).
+#
+# Specifically:
+#   surface 3 was:   -100.0 cyl_y     (Rx = -100, Ry effectively infinite)
+#   surface 3 is :   -100.0 toric -200.0
+#                    (Rx = -100, Ry = -200  →  half the horizontal power
+#                                              in the orthogonal axis)
+#
+# Why these numbers:
+#   |W| = |Rx - Ry| = 100  >>  the W<1e-3 degenerate-W fallback threshold,
+#   so every ray actually runs the toric Newton iteration (the fallback
+#   to spherical never trips and we genuinely test M4/M5 code).
+#
+#   Ry = 2·Rx (in magnitude) gives a weak but non-trivial vertical
+#   curvature.  Strong enough that you can see a ghost-shape difference
+#   in render compared to the pure-cyl_y variant; weak enough that the
+#   2× horizontal squeeze stays close to its design value.
+#
+# Validation hints:
+#   1. The lens must parse with the M1 parser — surface 3 should show
+#      "toric" in the Type column with "Ry=-200.000" trailer.
+#   2. filter_ghost_pairs should keep approximately the same number of
+#      pairs as the cyl_y variant (~45 of 55) — toric reflections are
+#      geometrically similar to cylindrical ones for small Rx-Ry ratios.
+#   3. The cyl_y/toric bounce-pair (0, 3) still produces a horizontal
+#      streak — same anamorphic signature as the cyl_y/cyl_y baseline.
+#   4. Running with this file vs the cyl_y baseline through FlareSim is
+#      the integration test for M4 + M5: identical pipeline, only the
+#      surface-intersection code path differs at surface 3.
+
+name: Anamorphic Test 50mm 2x toric
+focal_length: 50.0
+
+surfaces:
+# radius     thickness   ior      abbe   semi_ap   coating  type     [Ry]
+# --- Front afocal cylindrical attachment (2x squeeze, axes vertical) ---
+  -50.0      8.00        1.51680  64.2   45.0      1        cyl_y               # plano-concave neg, F ≈ -97
+  0          92.00       1.00000  0.0    45.0      0                            # flat back; 92 mm air gap
+  0          10.00       1.51680  64.2   40.0      1                            # flat front of pos cyl
+  -100.0     15.00       1.00000  0.0    40.0      0        toric    -200.0     # M4/M5 toric: Rx=-100, Ry=-200
+
+# --- Spherical Petzval-style taking lens, ~50 mm ----------------------
+  45.0       6.00        1.51680  64.2   22.0      1                            # crown front (doublet 1)
+  -30.0      2.00        1.62000  36.0   22.0      1                            # cemented junction
+  -90.0      8.00        1.00000  0.0    20.0      0                            # back of D1, air gap
+  stop       8.00        1.00000  0.0    14.0      0                            # aperture stop
+  90.0       2.00        1.62000  36.0   20.0      1                            # flint front (doublet 2)
+  30.0       6.00        1.51680  64.2   22.0      1                            # cemented junction
+  -45.0      35.00       1.00000  0.0    22.0      0                            # back of D2 -> sensor

@@ -1,0 +1,59 @@
+# Anamorphic Test 50mm 2x — synthetic test prescription for FlareSim
+#
+# DESIGNED FROM SCRATCH for FlareSim Level-3 cylindrical-trace validation.
+# This is not a real product.  Optical image quality is mediocre — the
+# point is to produce ghosts whose geometry demonstrably goes through
+# real cylindrical surfaces, not to match any specific commercial lens.
+#
+# Layout (11 surfaces):
+#   0..3 : Front afocal cylindrical attachment, 2x squeeze.
+#          Axes vertical (cyl_y) → curve in XZ → horizontal compression.
+#          Plano-concave  (F ≈ -97 mm)
+#          + 92 mm air gap
+#          + Plano-convex (F ≈ +194 mm).
+#          Angular magnification = -F1/F2 ≈ 0.5  →  2x squeeze.
+#   4..10: Spherical Petzval-style taking lens, ~50 mm equivalent FL.
+#
+# Effective focal lengths after the afocal block:
+#   horizontal (squeezed): ~25 mm
+#   vertical   (unchanged): ~50 mm
+#   ratio = 0.5  →  classic 2x anamorphic.
+#
+# Validation hints (M6 of ANAMORPHIC_LEVEL3_PLAN.md):
+#   1. Ghosts of a horizontal point source should elongate vertically;
+#      ghosts of a vertical point source should elongate horizontally.
+#   2. Sweeping a bright source horizontally across the optical axis
+#      should produce a strong horizontal Fresnel streak from the cyl_y
+#      bounce pair (surfaces 0 ↔ 3) — the "anamorphic signature".
+#   3. The pair filter should keep noticeably MORE pairs than a comparable
+#      all-spherical lens because the cylindrical reflections create new
+#      ghost families that didn't exist before.
+#
+# Caveat: only cyl_y surfaces are used (no toric).  That's intentional —
+# this file is meant to exercise M1..M3, not M4/M5.
+
+name: Anamorphic Test 50mm 2x
+focal_length: 50.0
+
+surfaces:
+# radius     thickness   ior      abbe   semi_ap   coating  type
+# --- Front afocal cylindrical attachment (2x squeeze, axes vertical) ---
+  -50.0      8.00        1.51680  64.2   45.0      1        cyl_y     # plano-concave neg, F ≈ -97
+  0          92.00       1.00000  0.0    45.0      0                  # flat back; 92 mm air gap
+  0          10.00       1.51680  64.2   40.0      1                  # flat front of pos cyl
+  -100.0     15.00       1.00000  0.0    40.0      0        cyl_y     # plano-convex pos, F ≈ +194
+
+# --- Spherical Petzval-style taking lens, ~50 mm ----------------------
+# Semi-apertures are kept just under each surface's radius (semi_ap < |R|)
+# so every spherical surface is geometrically valid.  Off-axis ghost
+# rays through the cylindrical bounce-pair (0,3) will mostly vignette
+# at this taking lens — that's actual anamorphic-lens physics, not a
+# bug.  The cylindrical signature is still clearly visible in the
+# small pupil region that does get through.
+  45.0       6.00        1.51680  64.2   22.0      1                  # crown front (doublet 1)
+  -30.0      2.00        1.62000  36.0   22.0      1                  # cemented junction
+  -90.0      8.00        1.00000  0.0    20.0      0                  # back of D1, air gap
+  stop       8.00        1.00000  0.0    14.0      0                  # aperture stop
+  90.0       2.00        1.62000  36.0   20.0      1                  # flint front (doublet 2)
+  30.0       6.00        1.51680  64.2   22.0      1                  # cemented junction
+  -45.0      35.00       1.00000  0.0    22.0      0                  # back of D2 -> sensor
