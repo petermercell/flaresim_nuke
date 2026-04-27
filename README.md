@@ -188,8 +188,6 @@ Default: `86;89;90` (covers Ampere through Hopper). Add `100` for Blackwell if y
 
 ---
 
----
-
 ## Anamorphic Support
 
 Anamorphic lenses produce ghosts and flares with a different shape than spherical lenses — horizontal streaks, oval bokeh, asymmetric, rainbow chromatic aberrations. These signatures arise from cylindrical and toric refractive surfaces inside the actual lens, not from a post-render warp. FlareSim now traces rays through real anamorphic geometry on both CPU and GPU.
