@@ -1,0 +1,86 @@
+export PATH=/usr/local/cuda-12.1/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda-12.1/lib64:$LD_LIBRARY_PATH
+
+rm -rf build && mkdir build && cd build
+cmake .. -DNUKE_VERSION=17.0v1 \
+         -DNDK_ROOT=/opt/Nuke17.0v1/include \
+         -DNUKE_LIB_DIR=/opt/Nuke17.0v1 \
+         -DCMAKE_CUDA_ARCHITECTURES="86;89;90"
+make -j$(nproc)
+
+# ============================================================================
+# FlareSim + FlareSim3D — CUDA build commands for all Nuke versions
+#
+# Copy-paste the block for the version you need.
+# Each block does a clean rebuild from scratch.
+#
+# Prerequisites:
+#   - CMakeLists.txt in the project root (the two-target CUDA version)
+#   - src/FlareSim.cpp, src/FlareSim3D.cpp, and all other sources in src/
+#   - CUDA toolkit on PATH (nvcc)
+#
+# Output: build/FlareSim.so + build/FlareSim3D.so
+# ============================================================================
+
+
+# ---- Nuke 14.1v8 ----
+rm -rf build && mkdir build && cd build
+cmake .. -DNUKE_VERSION=14.1v8 \
+         -DNDK_ROOT=/opt/Nuke14.1v8/include \
+         -DNUKE_LIB_DIR=/opt/Nuke14.1v8 \
+         -DCMAKE_CUDA_ARCHITECTURES="86;89;90"
+make -j$(nproc)
+
+
+# ---- Nuke 15.0v8 ----
+rm -rf build && mkdir build && cd build
+cmake .. -DNUKE_VERSION=15.0v8 \
+         -DNDK_ROOT=/opt/Nuke15.0v8/include \
+         -DNUKE_LIB_DIR=/opt/Nuke15.0v8 \
+         -DCMAKE_CUDA_ARCHITECTURES="86;89;90"
+make -j$(nproc)
+
+
+# ---- Nuke 15.1v10 ----
+rm -rf build && mkdir build && cd build
+cmake .. -DNUKE_VERSION=15.1v10 \
+         -DNDK_ROOT=/opt/Nuke15.1v10/include \
+         -DNUKE_LIB_DIR=/opt/Nuke15.1v10 \
+         -DCMAKE_CUDA_ARCHITECTURES="86;89;90"
+make -j$(nproc)
+
+
+# ---- Nuke 15.2v6 ----
+rm -rf build && mkdir build && cd build
+cmake .. -DNUKE_VERSION=15.2v6 \
+         -DNDK_ROOT=/opt/Nuke15.2v6/include \
+         -DNUKE_LIB_DIR=/opt/Nuke15.2v6 \
+         -DCMAKE_CUDA_ARCHITECTURES="86;89;90"
+make -j$(nproc)
+
+
+# ---- Nuke 16.0v6 ----
+rm -rf build && mkdir build && cd build
+cmake .. -DNUKE_VERSION=16.0v6 \
+         -DNDK_ROOT=/opt/Nuke16.0v6/include \
+         -DNUKE_LIB_DIR=/opt/Nuke16.0v6 \
+         -DCMAKE_CUDA_ARCHITECTURES="86;89;90"
+make -j$(nproc)
+
+
+# ---- Nuke 16.1v1 ----
+rm -rf build && mkdir build && cd build
+cmake .. -DNUKE_VERSION=16.1v1 \
+         -DNDK_ROOT=/opt/Nuke16.1v1/include \
+         -DNUKE_LIB_DIR=/opt/Nuke16.1v1 \
+         -DCMAKE_CUDA_ARCHITECTURES="86;89;90"
+make -j$(nproc)
+
+
+# ---- Nuke 17.0v1 ----
+rm -rf build && mkdir build && cd build
+cmake .. -DNUKE_VERSION=17.0v1 \
+         -DNDK_ROOT=/opt/Nuke17.0v1/include \
+         -DNUKE_LIB_DIR=/opt/Nuke17.0v1 \
+         -DCMAKE_CUDA_ARCHITECTURES="86;89;90"
+make -j$(nproc)
